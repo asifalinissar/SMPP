@@ -5,10 +5,10 @@ import pduObjects.SubmitSm;
 
 public class SubmitSmEncoder {
 
-    public byte[] encode(SubmitSm submitSm , byte[] shortMessageIn) {
+    public byte[] encode(SubmitSm submitSm , byte[] shortMessageIn , boolean flagMultipart) {
 
         int smLength = shortMessageIn.length;
-
+        int esmClass = flagMultipart ? (submitSm.getEsmClass() | 0x40) : submitSm.getEsmClass();
         System.out.println("length of each segment: " + smLength);
 
         PduWriter pduWriter = new PduWriter();
@@ -23,7 +23,7 @@ public class SubmitSmEncoder {
         pduWriter.writeByte(submitSm.getDestAddrNpi());
         pduWriter.writeCString(submitSm.getDestAddr());
 
-        pduWriter.writeByte(submitSm.getEsmClass());
+        pduWriter.writeByte((byte) esmClass);
         pduWriter.writeByte(submitSm.getProtocolId());
         pduWriter.writeByte(submitSm.getPriorityFlag());
 
