@@ -38,56 +38,70 @@ public class SmsMessageProcessor {
         this.ucs2UdhPacker = new Ucs2UdhPacker();
     }
 
-    public void process(SubmitSm submitSm) {
+    public void process() {
+        while (true) {
+            boolean flagMultipart = false;
+            try {
+                SubmitSm submitSm = Queue.kafkaConsumerQ.take();
+                if (submitSm.getDataCoding() == DEFAULT) {
 
-        if (submitSm.getDataCoding() == DEFAULT) {
+                    List<String> parts = gsm7Segmenter.segment(submitSm.getShortMessage());
+                    System.out.println("Parts : " + parts);
+                    if (parts.size() == 1) {
+                        int sequenceId = sequenceNumberGenerator.next();
+                        byte[] shortMessage = gsm7Encoder.encode(parts.get(0));
+                        byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, shortMessage , flagMultipart);
 
-            List<String> parts = gsm7Segmenter.segment(submitSm.getShortMessage());
+                        //
 
-            if (parts.size() == 1) {
-                int sequenceId = sequenceNumberGenerator.next();
-                byte[] shortMessage = gsm7Encoder.encode(parts.get(0));
-                byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, shortMessage);
-                OutboundPdu outboundPdu = new OutboundPdu(sequenceId , 0x00000004 , pdu);
-                Queue.submitSmQ.add(outboundPdu);
-                return;
+
+                        StringBuilder hex = new StringBuilder();
+                        for (byte b : pdu) {
+                            hex.append(String.format("%02X ", b));
+                        }
+                        System.out.println("print to hex to see the data"+hex.toString());
+
+                        //
+                        OutboundPdu outboundPdu = new OutboundPdu(sequenceId, 0x00000004, pdu);
+                        Queue.submitSmQ.add(outboundPdu);
+                        continue;
+                    }
+                    flagMultipart = true;
+                    List<SmsSegment> segments = smsSegmentBuilder.build(parts);
+                    for (SmsSegment segment : segments) {
+                        int sequenceId = sequenceNumberGenerator.next();
+                        byte[] shortMessage = gsm7UdhPacker.buildUdhShortMsg(segment);
+                        byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, shortMessage , flagMultipart);
+                        OutboundPdu outboundPdu = new OutboundPdu(sequenceId, 0x00000004, pdu);
+                        Queue.submitSmQ.add(outboundPdu);
+                    }
+                    continue;
+                }
+
+                if (submitSm.getDataCoding() == UCS2) {
+                    List<String> parts = ucs2Segmenter.segments(submitSm.getShortMessage());
+                    if (parts.size() == 1) {
+                        int sequenceId = sequenceNumberGenerator.next();
+                        byte[] shortMsg = ucs2Encoder.encode(parts.get(0));
+                        byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, shortMsg , flagMultipart);
+                        OutboundPdu outboundPdu = new OutboundPdu(sequenceId, 0x00000004, pdu);
+                        Queue.submitSmQ.add(outboundPdu);
+                        continue;
+                    }
+                    flagMultipart = true;
+                    List<SmsSegment> segments = smsSegmentBuilder.build(parts);
+                    for (SmsSegment smsSegment : segments) {
+                        int sequenceId = sequenceNumberGenerator.next();
+                        byte[] udhShortMsg = ucs2UdhPacker.buildShortMsg(smsSegment);
+                        byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, udhShortMsg , flagMultipart);
+                        OutboundPdu outboundPdu = new OutboundPdu(sequenceId, 0x00000004, pdu);
+                        Queue.submitSmQ.add(outboundPdu);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            List<SmsSegment> segments = smsSegmentBuilder.build(parts);
-            for (SmsSegment segment : segments) {
-                int sequenceId = sequenceNumberGenerator.next();
-                byte[] shortMessage = gsm7UdhPacker.buildUdhShortMsg(segment);
-                byte[] pdu = pduBuilder.buildSubmitSm(submitSm, sequenceId, shortMessage);
-                OutboundPdu outboundPdu = new OutboundPdu(sequenceId , 0x00000004 , pdu);
-                Queue.submitSmQ.add(outboundPdu);
-            }
-
-            return;
         }
-
-        if (submitSm.getDataCoding() == UCS2) {
-            List<String> parts = ucs2Segmenter.segments(submitSm.getShortMessage());
-            if(parts.size() == 1){
-                int sequenceId = sequenceNumberGenerator.next();
-                byte [] shortMsg = ucs2Encoder.encode(parts.get(0));
-                byte [] pdu = pduBuilder.buildSubmitSm(submitSm , sequenceId, shortMsg);
-                OutboundPdu outboundPdu = new OutboundPdu(sequenceId , 0x00000004 , pdu);
-                Queue.submitSmQ.add(outboundPdu);
-                return;
-            }
-            List<SmsSegment> segments = smsSegmentBuilder.build(parts);
-            for(SmsSegment smsSegment : segments){
-                int sequenceId = sequenceNumberGenerator.next();
-                byte[] udhShortMsg = ucs2UdhPacker.buildShortMsg(smsSegment);
-                byte[] pdu = pduBuilder.buildSubmitSm(submitSm , sequenceId , udhShortMsg);
-                OutboundPdu outboundPdu = new OutboundPdu(sequenceId , 0x00000004 , pdu);
-                Queue.submitSmQ.add(outboundPdu);
-            }
-            return;
-        }
-
-        throw new IllegalArgumentException("Unsupported data coding: " + submitSm.getDataCoding()
-        );
     }
 
 //    private int nextSequenceId() {

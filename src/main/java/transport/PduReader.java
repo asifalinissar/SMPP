@@ -13,7 +13,7 @@ public class PduReader {
     }
 
     public byte[] readPdu() throws  IOException {
-
+        System.out.println("reached readPdu");
         byte[] lengthBytes  = readFully(4);
 
         int commandLength =

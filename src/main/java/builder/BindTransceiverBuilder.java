@@ -17,7 +17,7 @@ public class BindTransceiverBuilder {
 
     public byte[] buildBindTransceiver(BindTransceiver bindTransceiver , int sequenceId){
 
-        byte[] body = bindTransceiverEncoder.encode(bindTransceiver);
+        byte[] body = bindTransceiverEncoder. encode(bindTransceiver);
         int commandLeng = 16 + body.length;
 
         PduHeader header = new PduHeader();

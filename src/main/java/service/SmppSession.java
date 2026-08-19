@@ -6,9 +6,11 @@ import pduObjects.OutboundPdu;
 import pduObjects.PduHeader;
 import pduObjects.PduHeaderReader;
 import storage.Queue;
+import transport.PduReader;
 import transport.TransportHandler;
 
 import java.io.IOException;
+import java.util.HexFormat;
 
 public class SmppSession {
 
@@ -31,12 +33,16 @@ public class SmppSession {
         int sequence_id = 1;
         byte[] bindPdu = bindBuilder.buildBindTransceiver(bindTransceiver , sequence_id);
 
-        transportHandler.connect();
+//        transportHandler.connect();
         transportHandler.send(bindPdu);
+
+        System.out.println("Send the bind Pdu");
         byte[] resp = transportHandler.receive();
 
         PduHeaderReader pduHeaderReader = new PduHeaderReader();
+
         PduHeader pduHeader = pduHeaderReader.readHeader(resp);
+
 
         if (pduHeader.getCommandId() != BIND_TRANSCEIVER_RESP) {
             throw new IllegalStateException(
@@ -58,6 +64,8 @@ public class SmppSession {
         }
 
         bound = true;
+
+        System.out.println("Bind Success");
 
         startSender();
     }

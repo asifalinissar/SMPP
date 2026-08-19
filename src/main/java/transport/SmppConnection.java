@@ -27,6 +27,7 @@ public class SmppConnection {
         socket = new Socket(host , port);
         input = socket.getInputStream();
         output = socket.getOutputStream();
+        System.out.println("all connection is initialized");
     }
 
     public void sendBytes(byte [] pdu) throws  IOException{

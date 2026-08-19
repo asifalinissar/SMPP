@@ -1,16 +1,22 @@
 package org.example;
 
 
+import builder.BindTransceiverBuilder;
+import handler.Controller;
+import pduObjects.BindTransceiver;
 import pduObjects.PduHeader;
 import pduObjects.PduHeaderReader;
+import service.PendingRequestManager;
+import service.SmppSession;
+import transport.SmppConnection;
+import transport.TransportHandler;
 
 public class Main {
 
     public  static void main(String[] args){
-        byte[] data = new byte[]{0, 0, 0, 23, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 1};
-        PduHeaderReader pduHeaderReader = new PduHeaderReader();
-        PduHeader pduHeader = pduHeaderReader.readHeader(data);
 
-        System.out.println(pduHeader.getCommandLength());
+        Controller controller = new Controller();
+        controller.start();
     }
+
 }

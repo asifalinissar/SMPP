@@ -11,8 +11,8 @@ public class PduBuilder {
         this.submitSmEncoder = new SubmitSmEncoder();
         this.headerEncoder = new HeaderEncoder();
     }
-    public byte[] buildSubmitSm(SubmitSm submitSm , int sequence_id ,byte[] shortMessage){
-        byte [] body = submitSmEncoder.encode(submitSm , shortMessage);
+    public byte[] buildSubmitSm(SubmitSm submitSm , int sequence_id ,byte[] shortMessage , boolean flagMultipart){
+        byte [] body = submitSmEncoder.encode(submitSm , shortMessage , flagMultipart);
         int command_length = 16 + body.length;
         PduHeader pduHeader = new PduHeader();
         pduHeader.setCommandLength(command_length);
